@@ -10,24 +10,18 @@ import (
 	"time"
 )
 
-func main() {
-	parseFlags()
+func run(host string, metricsStorage *storage.MetricsStorage) {
+	var PollCount int64
 	collectMetricsTicker := time.NewTicker(options.pollInterval)
 	sendMetricsTicker := time.NewTicker(options.reportInterval)
-	metricStorage := &storage.MetricsStorage{
-		Metrics: make(map[string]float64),
-	}
-	port := strings.Split(flagRunAddr, ":")[1]
-	host := fmt.Sprintf("http://127.0.0.1:%s", port)
-	var PollCount int64
 	for {
 		select {
 		case <-collectMetricsTicker.C:
 			metrics := collector.CollectMetrics()
-			metricStorage.Metrics = metrics
+			metricsStorage.Metrics = metrics
 			PollCount++
 		case <-sendMetricsTicker.C:
-			err := handlers.SendGaugeMetrics(host, metricStorage)
+			err := handlers.SendGaugeMetrics(host, metricsStorage)
 			if err != nil {
 				log.Fatal(err)
 				return
@@ -39,4 +33,12 @@ func main() {
 			}
 		}
 	}
+}
+
+func main() {
+	parseFlags()
+	metricStorage := storage.NewMetricStorage()
+	port := strings.Split(flagRunAddr, ":")[1]
+	host := fmt.Sprintf("http://127.0.0.1:%s", port)
+	run(host, metricStorage)
 }

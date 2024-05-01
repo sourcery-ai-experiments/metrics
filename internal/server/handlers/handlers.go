@@ -18,6 +18,7 @@ func handleError(res http.ResponseWriter, errMsg string, statusCode int) {
 }
 
 func AddMetric(res http.ResponseWriter, req *http.Request) {
+	memStorage := storage.GetMemStorage()
 	metricType, metricName := chi.URLParam(req, "metricType"), chi.URLParam(req, "metricName")
 	if metricName == "" {
 		handleError(res, "empty metric name", http.StatusNotFound)
@@ -26,9 +27,9 @@ func AddMetric(res http.ResponseWriter, req *http.Request) {
 	var err error
 	switch metricType {
 	case gauge:
-		err = storage.Storage.AddGaugeValues(metricName, chi.URLParam(req, "metricValue"))
+		err = memStorage.AddGaugeValues(metricName, chi.URLParam(req, "metricValue"))
 	case counter:
-		err = storage.Storage.AddCounterValues(metricName, chi.URLParam(req, "metricValue"))
+		err = memStorage.AddCounterValues(metricName, chi.URLParam(req, "metricValue"))
 	default:
 		handleError(res, "incorrect metric type", http.StatusBadRequest)
 		return
@@ -40,15 +41,16 @@ func AddMetric(res http.ResponseWriter, req *http.Request) {
 }
 
 func GetMetric(res http.ResponseWriter, req *http.Request) {
+	memStorage := storage.GetMemStorage()
 	metricType, metricName := chi.URLParam(req, "metricType"), chi.URLParam(req, "metricName")
 	var v interface{}
 	var found bool
 
 	switch metricType {
 	case gauge:
-		v, found = storage.Storage.GetGaugeValues(metricName)
+		v, found = memStorage.GetGaugeValues(metricName)
 	case counter:
-		v, found = storage.Storage.GetCounterValues(metricName)
+		v, found = memStorage.GetCounterValues(metricName)
 	default:
 		handleError(res, "incorrect metric type", http.StatusNotFound)
 		return
@@ -61,11 +63,12 @@ func GetMetric(res http.ResponseWriter, req *http.Request) {
 }
 
 func GetAllMetricsHandler(res http.ResponseWriter, req *http.Request) {
+	memStorage := storage.GetMemStorage()
 	html := "<html><body><ul>"
-	for key, value := range storage.Storage.GetAllGaugeValues() {
+	for key, value := range memStorage.GetAllGaugeValues() {
 		html += fmt.Sprintf("<li>%s: %v</li>", key, value)
 	}
-	for key, value := range storage.Storage.GetAllCounterValues() {
+	for key, value := range memStorage.GetAllCounterValues() {
 		html += fmt.Sprintf("<li>%s: %v</li>", key, value)
 	}
 	html += "</ul></body></html>"

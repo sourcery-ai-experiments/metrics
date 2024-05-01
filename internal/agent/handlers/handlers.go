@@ -8,15 +8,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 )
 
-type MetricsStorage struct {
-	Metrics map[string]float64
-	Mutex   sync.RWMutex
-}
-
-// sendMetrics sends metrics to a specified host.
 func sendMetrics(host string, metricType string, metricName string, metricValue string) error {
 	client := resty.New()
 	resp, err := client.R().
@@ -39,7 +32,6 @@ func sendMetrics(host string, metricType string, metricName string, metricValue 
 	return nil
 }
 
-// SendGaugeMetrics sends gauge metrics to a specified host.
 func SendGaugeMetrics(host string, metricStorage *storage.MetricsStorage) error {
 	metricStorage.Mutex.RLock()
 	defer metricStorage.Mutex.RUnlock()
@@ -53,7 +45,6 @@ func SendGaugeMetrics(host string, metricStorage *storage.MetricsStorage) error 
 	return nil
 }
 
-// SendCounterMetrics sends counter metrics to a specified host.
 func SendCounterMetrics(host, metricName string, metricValue int64) error {
 	return sendMetrics(host, "counter", metricName, strconv.FormatInt(metricValue, 10))
 }

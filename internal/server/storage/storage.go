@@ -13,9 +13,13 @@ type MemStorage struct {
 	mutex         sync.RWMutex
 }
 
-var Storage = &MemStorage{
+var memStorage = MemStorage{
 	gaugeValues:   make(map[string]float64),
 	counterValues: make(map[string]int64),
+}
+
+func GetMemStorage() *MemStorage {
+	return &memStorage
 }
 
 type MetricRepository interface {
