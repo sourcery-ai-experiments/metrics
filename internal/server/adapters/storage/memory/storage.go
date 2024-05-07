@@ -54,7 +54,7 @@ func setCounterMetricValue(req *domain.SetMetricRequest, s *MetricStorage) *doma
 	newValue, err := strconv.Atoi(req.MetricValue)
 	if err != nil {
 		return &domain.SetMetricResponse{
-			Error: err,
+			Error: domain.ErrIncorrectMetricValue,
 		}
 	}
 	value, found := s.data[req.MetricName]
@@ -62,7 +62,7 @@ func setCounterMetricValue(req *domain.SetMetricRequest, s *MetricStorage) *doma
 		parsedValue, err := strconv.Atoi(value)
 		if err != nil {
 			return &domain.SetMetricResponse{
-				Error: err,
+				Error: domain.ErrIncorrectMetricValue,
 			}
 		}
 		currentValue = parsedValue
