@@ -1,8 +1,9 @@
 package service
 
 import (
+	"strconv"
+
 	"github.com/agatma/sprint1-http-server/internal/server/core/domain"
-	"github.com/agatma/sprint1-http-server/internal/server/core/validation"
 )
 
 type MetricStorage interface {
@@ -39,7 +40,7 @@ func (ms *MetricService) GetMetricValue(request *domain.MetricRequest) *domain.M
 func (ms *MetricService) SetMetricValue(request *domain.SetMetricRequest) *domain.SetMetricResponse {
 	switch request.MetricType {
 	case domain.Gauge:
-		err := validation.ValidateGaugeValue(request.MetricValue)
+		_, err := strconv.ParseFloat(request.MetricValue, 64)
 		if err != nil {
 			return &domain.SetMetricResponse{
 				Error: domain.ErrIncorrectMetricValue,
@@ -47,12 +48,6 @@ func (ms *MetricService) SetMetricValue(request *domain.SetMetricRequest) *domai
 		}
 		return ms.gaugeStorage.SetMetricValue(request)
 	case domain.Counter:
-		err := validation.ValidateCounterValue(request.MetricValue)
-		if err != nil {
-			return &domain.SetMetricResponse{
-				Error: domain.ErrIncorrectMetricValue,
-			}
-		}
 		return ms.counterStorage.SetMetricValue(request)
 	default:
 		return &domain.SetMetricResponse{
