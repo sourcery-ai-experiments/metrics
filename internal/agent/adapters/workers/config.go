@@ -2,7 +2,7 @@ package workers
 
 import (
 	"flag"
-	"log"
+	"fmt"
 
 	"github.com/caarlos0/env/v11"
 )
@@ -18,7 +18,7 @@ type Config struct {
 	PollInterval   int    `env:"POLL_INTERVAL"`
 }
 
-func NewConfig() *Config {
+func NewConfig() (*Config, error) {
 	var (
 		cfg            Config
 		flagRunAddr    *string
@@ -31,7 +31,7 @@ func NewConfig() *Config {
 	flag.Parse()
 	err := env.Parse(&cfg)
 	if err != nil {
-		log.Fatal(err)
+		return &cfg, fmt.Errorf("failed to get config for worker: %w", err)
 	}
 	if cfg.Address == "" {
 		cfg.Address = *flagRunAddr
@@ -43,5 +43,5 @@ func NewConfig() *Config {
 	if cfg.PollInterval == 0 {
 		cfg.PollInterval = *pollInterval
 	}
-	return &cfg
+	return &cfg, nil
 }

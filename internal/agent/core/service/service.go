@@ -11,8 +11,6 @@ import (
 	"github.com/agatma/sprint1-http-server/internal/agent/core/handlers"
 )
 
-var errTypeNotFound = errors.New("metric type is not found")
-
 type AgentMetricStorage interface {
 	GetMetricValue(request *domain.MetricRequest) *domain.MetricResponse
 	SetMetricValue(request *domain.SetMetricRequest) *domain.SetMetricResponse
@@ -71,7 +69,7 @@ func (a *AgentMetricService) collectMemStats() domain.Metrics {
 	}
 }
 
-func (a *AgentMetricService) UpdateMetrics() error {
+func (a *AgentMetricService) UpdateMetrics(pollCount int) error {
 	metrics := a.collectMemStats()
 	for metricName, metricValue := range metrics.Values {
 		response := a.gaugeAgentStorage.SetMetricValue(&domain.SetMetricRequest{
@@ -94,7 +92,7 @@ func (a *AgentMetricService) UpdateMetrics() error {
 	response = a.counterAgentStorage.SetMetricValue(&domain.SetMetricRequest{
 		MetricType:  domain.Counter,
 		MetricName:  domain.PollCount,
-		MetricValue: "1",
+		MetricValue: strconv.Itoa(pollCount),
 	})
 	if response.Error != nil {
 		return response.Error
@@ -110,7 +108,7 @@ func (a *AgentMetricService) getAllMetrics(request *domain.GetAllMetricsRequest)
 		return a.counterAgentStorage.GetAllMetrics(request)
 	default:
 		return &domain.GetAllMetricsResponse{
-			Error: errTypeNotFound,
+			Error: errors.New("metric type is not found"),
 		}
 	}
 }
@@ -128,6 +126,9 @@ func (a *AgentMetricService) SendMetrics(host string) error {
 	response = a.getAllMetrics(&domain.GetAllMetricsRequest{
 		MetricType: domain.Counter,
 	})
+	if response.Error != nil {
+		return fmt.Errorf("error occured geting metrics: %w", response.Error)
+	}
 	for metricName, metricValue := range response.Values {
 		err := handlers.SendMetrics(host, domain.Counter, metricName, metricValue)
 		if err != nil {

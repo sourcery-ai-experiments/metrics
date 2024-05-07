@@ -17,7 +17,10 @@ func main() {
 }
 
 func run() error {
-	cfg := workers.NewConfig()
+	cfg, err := workers.NewConfig()
+	if err != nil {
+		return fmt.Errorf("can't load config: %w", err)
+	}
 	gaugeAgentStorage, err := storage.NewAgentStorage(storage.Config{
 		Memory: &memory.Config{},
 	})
@@ -32,7 +35,7 @@ func run() error {
 	}
 	agentMetricService := service.NewAgentMetricService(gaugeAgentStorage, counterAgentStorage)
 	worker := workers.NewAgentWorker(agentMetricService, cfg)
-	if err := worker.Run(); err != nil {
+	if err = worker.Run(); err != nil {
 		return fmt.Errorf("server has failed: %w", err)
 	}
 	return nil

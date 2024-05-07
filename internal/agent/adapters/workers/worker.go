@@ -7,7 +7,7 @@ import (
 )
 
 type AgentMetricService interface {
-	UpdateMetrics() error
+	UpdateMetrics(pollCount int) error
 	SendMetrics(host string) error
 }
 
@@ -32,18 +32,21 @@ func (a *AgentWorker) Run() error {
 	host := "http://localhost:" + port
 	updateMetricsTicker := time.NewTicker(time.Duration(a.config.PollInterval) * time.Second)
 	sendMetricsTicker := time.NewTicker(time.Duration(a.config.ReportInterval) * time.Second)
+	pollCount := 0
 	for {
 		select {
 		case <-updateMetricsTicker.C:
-			err := a.agentMetricService.UpdateMetrics()
+			err := a.agentMetricService.UpdateMetrics(pollCount)
 			if err != nil {
 				return fmt.Errorf("failed to update metrics %w", err)
 			}
+			pollCount++
 		case <-sendMetricsTicker.C:
 			err := a.agentMetricService.SendMetrics(host)
 			if err != nil {
 				return fmt.Errorf("failed to send metrics %w", err)
 			}
+			pollCount = 0
 		}
 	}
 }

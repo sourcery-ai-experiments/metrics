@@ -17,12 +17,15 @@ func main() {
 }
 
 func run() error {
-	cfg := rest.NewConfig()
+	cfg, err := rest.NewConfig()
+	if err != nil {
+		return fmt.Errorf("can't load config: %w", err)
+	}
 	gaugeStorage, err := storage.NewStorage(storage.Config{
 		Memory: &memory.Config{},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to initialize a storage: %w", err)
+		return fmt.Errorf("no available storage for server: %w", err)
 	}
 	counterStorage, err := storage.NewStorage(storage.Config{
 		Memory: &memory.Config{},

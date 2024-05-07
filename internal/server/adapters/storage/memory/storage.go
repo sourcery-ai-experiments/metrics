@@ -1,7 +1,6 @@
 package memory
 
 import (
-	"strconv"
 	"sync"
 
 	"github.com/agatma/sprint1-http-server/internal/server/core/domain"
@@ -32,9 +31,6 @@ func (s *MetricStorage) GetMetricValue(req *domain.MetricRequest) *domain.Metric
 func (s *MetricStorage) SetMetricValue(req *domain.SetMetricRequest) *domain.SetMetricResponse {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	if req.MetricType == domain.Counter {
-		return setCounterMetricValue(req, s)
-	}
 	s.data[req.MetricName] = req.MetricValue
 	return &domain.SetMetricResponse{
 		Error: nil,
@@ -46,30 +42,5 @@ func (s *MetricStorage) GetAllMetrics(req *domain.GetAllMetricsRequest) *domain.
 	defer s.mux.Unlock()
 	return &domain.GetAllMetricsResponse{
 		Values: s.data,
-	}
-}
-
-func setCounterMetricValue(req *domain.SetMetricRequest, s *MetricStorage) *domain.SetMetricResponse {
-	var currentValue int
-	newValue, err := strconv.Atoi(req.MetricValue)
-	if err != nil {
-		return &domain.SetMetricResponse{
-			Error: err,
-		}
-	}
-	value, found := s.data[req.MetricName]
-	if found {
-		parsedValue, err := strconv.Atoi(value)
-		if err != nil {
-			return &domain.SetMetricResponse{
-				Error: err,
-			}
-		}
-		currentValue = parsedValue
-	}
-	newValue += currentValue
-	s.data[req.MetricName] = strconv.Itoa(newValue)
-	return &domain.SetMetricResponse{
-		Error: nil,
 	}
 }
