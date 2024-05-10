@@ -36,11 +36,11 @@ func (a *AgentWorker) Run() error {
 	for {
 		select {
 		case <-updateMetricsTicker.C:
+			pollCount++
 			err := a.agentMetricService.UpdateMetrics(pollCount)
 			if err != nil {
 				return fmt.Errorf("failed to update metrics %w", err)
 			}
-			pollCount++
 		case <-sendMetricsTicker.C:
 			err := a.agentMetricService.SendMetrics(host)
 			if err != nil {
