@@ -3,13 +3,15 @@ package rest
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 
+	"github.com/agatma/sprint1-http-server/internal/server/adapters/api/middleware"
 	"github.com/agatma/sprint1-http-server/internal/server/core/domain"
+	"github.com/agatma/sprint1-http-server/internal/server/logger"
 )
 
 type MetricService interface {
@@ -28,7 +30,7 @@ type API struct {
 
 func (a *API) Run() error {
 	if err := a.srv.ListenAndServe(); err != nil {
-		log.Printf("error occured during running server %v", err)
+		logger.Log.Error("error occured during running server: ", zap.Error(err))
 		return fmt.Errorf("failed run server: %w", err)
 	}
 	return nil
@@ -39,6 +41,7 @@ func NewAPI(metricService MetricService, cfg *Config) *API {
 		metricService: metricService,
 	}
 	r := chi.NewRouter()
+	r.Use(middleware.RequestLogging)
 	r.Route("/update", func(r chi.Router) {
 		r.Post("/{metricType}/{metricName}/{metricValue}", h.SetMetricValue)
 	})
@@ -64,12 +67,11 @@ func (h *handler) SetMetricValue(w http.ResponseWriter, req *http.Request) {
 		MetricValue: metricValue,
 	})
 	if response.Error != nil {
-		log.Printf(
-			"failed to set metric value %s for metricType %s, metricName %s: %v",
-			metricValue,
-			metricType,
-			metricName,
-			response.Error,
+		logger.Log.Error("failed to set metric",
+			zap.String("metricValue", metricValue),
+			zap.String("metricType", metricType),
+			zap.String("metricName", metricName),
+			zap.Error(response.Error),
 		)
 		switch {
 		case errors.Is(response.Error, domain.ErrIncorrectMetricType):
@@ -80,6 +82,7 @@ func (h *handler) SetMetricValue(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, "", http.StatusInternalServerError)
 		}
 	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *handler) GetMetricValue(w http.ResponseWriter, req *http.Request) {
@@ -93,11 +96,10 @@ func (h *handler) GetMetricValue(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if response.Error != nil {
-		log.Printf(
-			"failed to get metric value for metricType %s, metricName %s: %v",
-			metricType,
-			metricName,
-			response.Error,
+		logger.Log.Error("failed to get metric",
+			zap.String("metricType", metricType),
+			zap.String("metricName", metricName),
+			zap.Error(response.Error),
 		)
 		if errors.Is(response.Error, domain.ErrIncorrectMetricType) {
 			http.Error(w, domain.ErrItemNotFound.Error(), http.StatusNotFound)
@@ -107,6 +109,7 @@ func (h *handler) GetMetricValue(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if _, err := w.Write([]byte(response.MetricValue)); err != nil {
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 }
@@ -114,13 +117,21 @@ func (h *handler) GetMetricValue(w http.ResponseWriter, req *http.Request) {
 func (h *handler) GetAllMetrics(w http.ResponseWriter, req *http.Request) {
 	gauge := h.metricService.GetAllMetrics(&domain.GetAllMetricsRequest{MetricType: domain.Gauge})
 	if gauge.Error != nil {
-		log.Printf("failed to get an item: %v for metricType %s", gauge.Error, domain.Gauge)
+		logger.Log.Error(
+			"failed to get an item",
+			zap.String("metricType", domain.Gauge),
+			zap.Error(gauge.Error),
+		)
 		http.Error(w, domain.ErrItemNotFound.Error(), http.StatusNotFound)
 		return
 	}
 	counter := h.metricService.GetAllMetrics(&domain.GetAllMetricsRequest{MetricType: domain.Counter})
 	if counter.Error != nil {
-		log.Printf("failed to get an item: %v for metricType %s", gauge.Error, domain.Gauge)
+		logger.Log.Error(
+			"failed to get an item",
+			zap.String("metricType", domain.Counter),
+			zap.Error(counter.Error),
+		)
 		http.Error(w, domain.ErrItemNotFound.Error(), http.StatusNotFound)
 		return
 	}
@@ -134,6 +145,7 @@ func (h *handler) GetAllMetrics(w http.ResponseWriter, req *http.Request) {
 	html += "</ul></body></html>"
 	w.Header().Set("Content-Type", "text/html")
 	if _, err := w.Write([]byte(html)); err != nil {
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 }
