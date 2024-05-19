@@ -14,6 +14,12 @@ import (
 	"github.com/agatma/sprint1-http-server/internal/server/logger"
 )
 
+const (
+	metricType  = "metricType"
+	metricValue = "metricValue"
+	metricName  = "metricName"
+)
+
 type MetricService interface {
 	GetMetricValue(request *domain.MetricRequest) *domain.MetricResponse
 	SetMetricValue(request *domain.SetMetricRequest) *domain.SetMetricResponse
@@ -58,19 +64,19 @@ func NewAPI(metricService MetricService, cfg *Config) *API {
 }
 
 func (h *handler) SetMetricValue(w http.ResponseWriter, req *http.Request) {
-	metricType := chi.URLParam(req, "metricType")
-	metricName := chi.URLParam(req, "metricName")
-	metricValue := chi.URLParam(req, "metricValue")
+	mType := chi.URLParam(req, metricType)
+	mName := chi.URLParam(req, metricName)
+	mValue := chi.URLParam(req, metricValue)
 	response := h.metricService.SetMetricValue(&domain.SetMetricRequest{
-		MetricType:  metricType,
-		MetricName:  metricName,
-		MetricValue: metricValue,
+		MetricType:  mType,
+		MetricName:  mName,
+		MetricValue: mValue,
 	})
 	if response.Error != nil {
 		logger.Log.Error("failed to set metric",
-			zap.String("metricValue", metricValue),
-			zap.String("metricType", metricType),
-			zap.String("metricName", metricName),
+			zap.String(metricValue, mValue),
+			zap.String(metricType, mType),
+			zap.String(metricName, mName),
 			zap.Error(response.Error),
 		)
 		switch {
@@ -86,10 +92,10 @@ func (h *handler) SetMetricValue(w http.ResponseWriter, req *http.Request) {
 }
 
 func (h *handler) GetMetricValue(w http.ResponseWriter, req *http.Request) {
-	metricType, metricName := chi.URLParam(req, "metricType"), chi.URLParam(req, "metricName")
+	mType, mName := chi.URLParam(req, metricType), chi.URLParam(req, metricName)
 	response := h.metricService.GetMetricValue(&domain.MetricRequest{
-		MetricType: metricType,
-		MetricName: metricName,
+		MetricType: mType,
+		MetricName: mName,
 	})
 	if !response.Found {
 		http.Error(w, domain.ErrItemNotFound.Error(), http.StatusNotFound)
@@ -97,8 +103,8 @@ func (h *handler) GetMetricValue(w http.ResponseWriter, req *http.Request) {
 	}
 	if response.Error != nil {
 		logger.Log.Error("failed to get metric",
-			zap.String("metricType", metricType),
-			zap.String("metricName", metricName),
+			zap.String(metricType, mType),
+			zap.String(metricName, mName),
 			zap.Error(response.Error),
 		)
 		if errors.Is(response.Error, domain.ErrIncorrectMetricType) {
@@ -119,7 +125,7 @@ func (h *handler) GetAllMetrics(w http.ResponseWriter, req *http.Request) {
 	if gauge.Error != nil {
 		logger.Log.Error(
 			"failed to get an item",
-			zap.String("metricType", domain.Gauge),
+			zap.String(metricType, domain.Gauge),
 			zap.Error(gauge.Error),
 		)
 		http.Error(w, domain.ErrItemNotFound.Error(), http.StatusNotFound)
@@ -129,7 +135,7 @@ func (h *handler) GetAllMetrics(w http.ResponseWriter, req *http.Request) {
 	if counter.Error != nil {
 		logger.Log.Error(
 			"failed to get an item",
-			zap.String("metricType", domain.Counter),
+			zap.String(metricType, domain.Counter),
 			zap.Error(counter.Error),
 		)
 		http.Error(w, domain.ErrItemNotFound.Error(), http.StatusNotFound)
