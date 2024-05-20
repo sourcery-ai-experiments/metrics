@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/go-resty/resty/v2"
+	"go.uber.org/zap"
+
+	"github.com/agatma/sprint1-http-server/internal/agent/logger"
 )
 
 func SendMetrics(host string, metricType string, metricName string, metricValue string) error {
@@ -27,6 +29,12 @@ func SendMetrics(host string, metricType string, metricName string, metricValue 
 		return fmt.Errorf("bad request. Status Code %d", resp.StatusCode())
 	}
 
-	log.Printf("made request %s. Got status code %d", resp.Request.URL, resp.StatusCode())
+	logger.Log.Info(
+		"made http request",
+		zap.String("uri", resp.Request.URL),
+		zap.String("method", resp.Request.Method),
+		zap.Int("statusCode", resp.StatusCode()),
+		zap.Duration("duration", resp.Time()),
+	)
 	return nil
 }

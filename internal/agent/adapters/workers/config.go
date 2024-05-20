@@ -16,18 +16,21 @@ type Config struct {
 	Address        string `env:"ADDRESS"`
 	ReportInterval int    `env:"REPORT_INTERVAL"`
 	PollInterval   int    `env:"POLL_INTERVAL"`
+	LogLevel       string
 }
 
 func NewConfig() (*Config, error) {
 	var (
 		cfg            Config
 		flagRunAddr    *string
+		flagLogLevel   *string
 		pollInterval   *int
 		reportInterval *int
 	)
 	flagRunAddr = flag.String("a", "localhost:8080", "run address")
 	pollInterval = flag.Int("p", defaultPollInterval, " poll interval ")
 	reportInterval = flag.Int("r", defaultReportInterval, " report interval ")
+	flagLogLevel = flag.String("l", "info", "log level")
 	flag.Parse()
 	err := env.Parse(&cfg)
 	if err != nil {
@@ -43,5 +46,6 @@ func NewConfig() (*Config, error) {
 	if cfg.PollInterval == 0 {
 		cfg.PollInterval = *pollInterval
 	}
+	cfg.LogLevel = *flagLogLevel
 	return &cfg, nil
 }

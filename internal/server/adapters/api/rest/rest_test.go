@@ -3,18 +3,19 @@ package rest
 import (
 	"bytes"
 	"context"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
 	"github.com/agatma/sprint1-http-server/internal/server/adapters/storage"
 	"github.com/agatma/sprint1-http-server/internal/server/adapters/storage/memory"
 	"github.com/agatma/sprint1-http-server/internal/server/core/domain"
 	"github.com/agatma/sprint1-http-server/internal/server/core/service"
+	"github.com/agatma/sprint1-http-server/internal/server/logger"
 )
 
 func TestHandler_SetMetricValueSuccess(t *testing.T) {
@@ -86,7 +87,7 @@ func TestHandler_SetMetricValueSuccess(t *testing.T) {
 			result := w.Result()
 			defer func() {
 				err := result.Body.Close()
-				log.Print("error occurred body close: %w", err)
+				logger.Log.Error("error occurred during closing body", zap.Error(err))
 			}()
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 
@@ -182,7 +183,7 @@ func TestHandler_SetMetricValueFailed(t *testing.T) {
 			result := w.Result()
 			defer func() {
 				err := result.Body.Close()
-				log.Print("error occurred body close: %w", err)
+				logger.Log.Error("error occurred during closing body", zap.Error(err))
 			}()
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 		})
